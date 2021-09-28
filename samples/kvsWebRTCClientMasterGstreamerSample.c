@@ -151,11 +151,19 @@ PVOID sendGstreamerAudioVideo(PVOID args)
                     "video/x-h264,stream-format=byte-stream,alignment=au,profile=baseline ! appsink sync=TRUE emit-signals=TRUE name=appsink-video",
                     &error);
             } else {
+
+                pipeline = gst_parse_launch("rtspsrc location=rtsp://24.99.164.164:554/11 short-header=TRUE ! rtph264depay ! "
+                                            "video/x-h264, width=1280,height=720,framerate=30/1, format=avc,alignment=au ! "
+                                            "appsink sync=TRUE emit-signals=TRUE name=appsink-video",
+                                            &error);
+
+                /*
                 pipeline = gst_parse_launch(
                     "autovideosrc ! queue ! videoconvert ! video/x-raw,width=1280,height=720,framerate=[30/1,10000000/333333] ! "
                     "x264enc bframes=0 speed-preset=veryfast bitrate=512 byte-stream=TRUE tune=zerolatency ! "
                     "video/x-h264,stream-format=byte-stream,alignment=au,profile=baseline ! appsink sync=TRUE emit-signals=TRUE name=appsink-video",
                     &error);
+                 */
             }
             break;
 
@@ -169,6 +177,14 @@ PVOID sendGstreamerAudioVideo(PVOID args)
                                             "audio/x-opus,rate=48000,channels=2 ! appsink sync=TRUE emit-signals=TRUE name=appsink-audio",
                                             &error);
             } else {
+                pipeline = gst_parse_launch("rtspsrc location=rtsp://192.168.1.99:554/1 short-header=TRUE ! rtph264depay ! "
+                                            "video/x-h264, width=1280,height=720,framerate=30/1, format=avc,alignment=au ! "
+                                            "appsink sync=TRUE emit-signals=TRUE name=appsink-video autoaudiosrc ! "
+                                            "queue leaky=2 max-size-buffers=400 ! audioconvert ! audioresample ! opusenc ! "
+                                            "audio/x-opus,rate=48000,channels=2 ! appsink sync=TRUE emit-signals=TRUE name=appsink-audio",
+                                            &error);
+
+                /*
                 pipeline =
                     gst_parse_launch("autovideosrc ! queue ! videoconvert ! video/x-raw,width=1280,height=720,framerate=[30/1,10000000/333333] ! "
                                      "x264enc bframes=0 speed-preset=veryfast bitrate=512 byte-stream=TRUE tune=zerolatency ! "
@@ -177,6 +193,7 @@ PVOID sendGstreamerAudioVideo(PVOID args)
                                      "queue leaky=2 max-size-buffers=400 ! audioconvert ! audioresample ! opusenc ! "
                                      "audio/x-opus,rate=48000,channels=2 ! appsink sync=TRUE emit-signals=TRUE name=appsink-audio",
                                      &error);
+                */
             }
             break;
     }
@@ -421,8 +438,10 @@ INT32 main(INT32 argc, CHAR* argv[])
 
     strcpy(pSampleConfiguration->clientInfo.clientId, SAMPLE_MASTER_CLIENT_ID);
 
-    retStatus = createSignalingClientSync(&pSampleConfiguration->clientInfo, &pSampleConfiguration->channelInfo,
-                                          &pSampleConfiguration->signalingClientCallbacks, pSampleConfiguration->pCredentialProvider,
+    retStatus = createSignalingClientSync(&pSampleConfiguration->clientInfo,
+                                          &pSampleConfiguration->channelInfo,
+                                          &pSampleConfiguration->signalingClientCallbacks,
+                                          pSampleConfiguration->pCredentialProvider,
                                           &pSampleConfiguration->signalingClientHandle);
     if (retStatus != STATUS_SUCCESS) {
         printf("[KVS GStreamer Master] createSignalingClientSync(): operation returned status code: 0x%08x \n", retStatus);
